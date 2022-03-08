@@ -1,0 +1,70 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
+using Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace API
+{
+    public class Startup
+    {
+        /* Injecting config - gives Startup access to anything in
+        the config files -- appsettings.json etc */
+        private readonly IConfiguration _config;
+        public Startup(IConfiguration config)
+        {
+            _config = config;
+        }
+
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        // the configureService is the dependency injection container anything we want to use
+        // for dependency injection needs to be added here
+        public void ConfigureServices(IServiceCollection services)
+        {
+
+            services.AddControllers();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+            });
+            // adding DataContext class to be used as a service via Dependency injection
+            services.AddDbContext<DataContext>(opt => 
+            {
+              opt.UseSqlite(_config.GetConnectionString("DefaultConnection"));
+            });
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline. Recieves http requests and gives returns http responses if you want to add middleware to do something with the response or the request, we add it here in Configure
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
+            }
+
+            // app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+    }
+}
